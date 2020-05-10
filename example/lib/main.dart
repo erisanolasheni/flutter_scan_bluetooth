@@ -20,7 +20,7 @@ class _MyAppState extends State<MyApp> {
 
     _bluetooth.devices.listen((device) {
       setState(() {
-        _data += device.name+' (${device.address})\n';
+        _data += device.name + ' (${device.address}) (${device.rssi})\n';
       });
     });
     _bluetooth.scanStopped.listen((device) {
@@ -28,6 +28,8 @@ class _MyAppState extends State<MyApp> {
         _scanning = false;
         _data += 'scan stopped\n';
       });
+
+      _bluetooth.startScan();
     });
   }
 
@@ -45,26 +47,27 @@ class _MyAppState extends State<MyApp> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Center(
-                child: RaisedButton(child: Text(_scanning ? 'Stop scan' : 'Start scan'), onPressed: () async {
-                  try {
-                    if(_scanning) {
-                      await _bluetooth.stopScan();
-                      debugPrint("scanning stoped");
-                      setState(() {
-                        _data = '';
-                      });
-                    }
-                    else {
-                      await _bluetooth.startScan(pairedDevices: false);
-                      debugPrint("scanning started");
-                      setState(() {
-                        _scanning = true;
-                      });
-                    }
-                  } on PlatformException catch (e) {
-                    debugPrint(e.toString());
-                  }
-                }),
+                child: RaisedButton(
+                    child: Text(_scanning ? 'Stop scan' : 'Start scan'),
+                    onPressed: () async {
+                      try {
+                        if (_scanning) {
+                          await _bluetooth.stopScan();
+                          debugPrint("scanning stoped");
+                          setState(() {
+                            _data = '';
+                          });
+                        } else {
+                          await _bluetooth.startScan(pairedDevices: false);
+                          debugPrint("scanning started");
+                          setState(() {
+                            _scanning = true;
+                          });
+                        }
+                      } on PlatformException catch (e) {
+                        debugPrint(e.toString());
+                      }
+                    }),
               ),
             )
           ],

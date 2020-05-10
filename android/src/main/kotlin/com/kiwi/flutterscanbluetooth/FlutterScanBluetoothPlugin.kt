@@ -12,12 +12,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.location.LocationManager
 import android.os.Build
-import androidx.core.app.ActivityCompat
 import android.util.Log
+import androidx.core.app.ActivityCompat
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -25,8 +23,10 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
 
-class FlutterScanBluetoothPlugin(private val activity: Activity,
-                                 private val channel: MethodChannel) : MethodCallHandler, PluginRegistry.ActivityResultListener, PluginRegistry.RequestPermissionsResultListener {
+class FlutterScanBluetoothPlugin(
+    private val activity: Activity,
+    private val channel: MethodChannel
+) : MethodCallHandler, PluginRegistry.ActivityResultListener, PluginRegistry.RequestPermissionsResultListener {
 
     companion object {
         private val TAG = FlutterScanBluetoothPlugin::class.java.name!!
@@ -63,7 +63,12 @@ class FlutterScanBluetoothPlugin(private val activity: Activity,
         override fun onReceive(context: Context, intent: Intent) {
             if (BluetoothDevice.ACTION_FOUND == intent.action) {
                 val device: BluetoothDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                channel.invokeMethod(ACTION_NEW_DEVICE, toMap(device))
+
+                // Adding the RSSI
+                val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE)
+
+                // Add RSSI
+                channel.invokeMethod(ACTION_NEW_DEVICE, toMap(device, ""+rssi))
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED == intent.action) {
                 channel.invokeMethod(ACTION_SCAN_STOPPED, null)
             }
@@ -76,16 +81,17 @@ class FlutterScanBluetoothPlugin(private val activity: Activity,
         }
     }
 
-    private fun toMap(device: BluetoothDevice): Map<String, String> {
+    private fun toMap(device: BluetoothDevice, rssi: String = "-32768"): Map<String, String> {
         val map = HashMap<String, String>()
         var name = device.name ?: device.address
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && !name.contains("-LE")) {
-            name += if(device.type == DEVICE_TYPE_LE) "-LE" else ""
+            name += if (device.type == DEVICE_TYPE_LE) "-LE" else ""
         }
 
         map["name"] = name
         map["address"] = device.address
+        map["rssi"] = rssi
         return map
     }
 
@@ -113,7 +119,7 @@ class FlutterScanBluetoothPlugin(private val activity: Activity,
                 }
                 true
             }
-            GpsUtils.GPS_REQUEST-> {
+            GpsUtils.GPS_REQUEST -> {
                 if (GpsUtils(activity).isGpsEnabled) {
                     scan(pendingScanResult!!)
                 } else {
@@ -157,7 +163,7 @@ class FlutterScanBluetoothPlugin(private val activity: Activity,
         if (adapter!!.isEnabled) {
             if (activity.checkCallingOrSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
                     == PERMISSION_GRANTED && activity.checkCallingOrSelfPermission(BLUETOOTH_ADMIN)
-                    == PERMISSION_GRANTED&& activity.checkCallingOrSelfPermission(BLUETOOTH)
+                    == PERMISSION_GRANTED && activity.checkCallingOrSelfPermission(BLUETOOTH)
                     == PERMISSION_GRANTED) {
 
                 GpsUtils(activity).turnGPSOn {

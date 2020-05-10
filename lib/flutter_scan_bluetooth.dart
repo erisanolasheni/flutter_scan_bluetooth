@@ -5,10 +5,11 @@ import 'package:flutter/services.dart';
 class BluetoothDevice {
   final String name;
   final String address;
+  final String rssi;
   final bool paired;
   final bool nearby;
 
-  const BluetoothDevice(this.name, this.address, {this.nearby = false, this.paired = false});
+  const BluetoothDevice(this.name, this.address, this.rssi, {this.nearby = false, this.paired = false});
 
   @override
   bool operator ==(Object other) =>
@@ -18,12 +19,12 @@ class BluetoothDevice {
   int get hashCode => name.hashCode ^ address.hashCode;
 
   Map<String, dynamic> toMap() {
-    return {'name': name, 'address': address};
+    return {'name': name, 'address': address, 'rssi': rssi};
   }
 
   @override
   String toString() {
-    return 'BluetoothDevice{name: $name, address: $address, paired: $paired, nearby: $nearby}';
+    return 'BluetoothDevice{name: $name, address: $address, paired: $paired, nearby: $nearby, rssi: $rssi}';
   }
 }
 
@@ -56,7 +57,7 @@ class FlutterScanBluetooth {
   Future<void> startScan({pairedDevices = false}) async {
     final bondedDevices = await _channel.invokeMethod('action_start_scan', pairedDevices);
     for (var device in bondedDevices) {
-      final d = BluetoothDevice(device['name'], device['address'], paired: true);
+      final d = BluetoothDevice(device['name'], device['address'], device['rssi'], paired: true);
       _pairedDevices.add(d);
       _controller.add(d);
     }
@@ -73,6 +74,7 @@ class FlutterScanBluetooth {
     _controller.add(BluetoothDevice(
       device['name'],
       device['address'],
+      device['rssi'],
       nearby: true,
       paired: _pairedDevices.firstWhere((item) => item.address == device['address'], orElse: () => null) != null,
     ));
