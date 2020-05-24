@@ -68,7 +68,7 @@ class FlutterScanBluetoothPlugin(
                 val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE)
 
                 // Add RSSI
-                channel.invokeMethod(ACTION_NEW_DEVICE, toMap(device, ""+rssi))
+                channel.invokeMethod(ACTION_NEW_DEVICE, toMap(device, "" + rssi))
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED == intent.action) {
                 channel.invokeMethod(ACTION_SCAN_STOPPED, null)
             }
@@ -92,6 +92,7 @@ class FlutterScanBluetoothPlugin(
         map["name"] = name
         map["address"] = device.address
         map["rssi"] = rssi
+        map["device_type"] = "" + device.getBluetoothClass().getMajorDeviceClass()
         return map
     }
 
